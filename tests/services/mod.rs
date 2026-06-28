@@ -5,3 +5,4 @@
 mod duplicate_finder_tests;
 mod hash_service_tests;
 mod manifest_diff_tests;
+mod remediation_tests;

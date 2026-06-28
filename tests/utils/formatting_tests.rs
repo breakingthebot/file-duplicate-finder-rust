@@ -6,11 +6,13 @@ use std::path::PathBuf;
 
 use file_duplicate_finder::models::duplicate_group::DuplicateGroup;
 use file_duplicate_finder::models::manifest_diff::ManifestDiff;
+use file_duplicate_finder::models::remediation_result::{RemediationGroup, RemediationResult};
 use file_duplicate_finder::models::scan_metrics::ScanMetrics;
 use file_duplicate_finder::models::scan_result::ScanResult;
 use file_duplicate_finder::utils::formatting::{
     format_duplicate_report_as_json, format_duplicate_report_as_text, format_manifest_diff_as_json,
-    format_manifest_diff_as_text,
+    format_manifest_diff_as_text, format_remediation_result_as_json,
+    format_remediation_result_as_text,
 };
 
 #[test]
@@ -62,6 +64,26 @@ fn format_manifest_diff_as_json_renders_changes() {
     assert!(report.contains("\"removed-a.txt\""));
 }
 
+#[test]
+/// Confirms that remediation plans are rendered in text form.
+fn format_remediation_result_as_text_renders_actions() {
+    let report = format_remediation_result_as_text(&build_remediation_result(false));
+
+    assert!(report.contains("Dry-run remediation:"));
+    assert!(report.contains("files_to_delete=2"));
+    assert!(report.contains("delete dup-a.txt"));
+}
+
+#[test]
+/// Confirms that remediation plans are rendered in JSON form.
+fn format_remediation_result_as_json_renders_actions() {
+    let report = format_remediation_result_as_json(&build_remediation_result(true));
+
+    assert!(report.contains("\"apply_changes\":true"));
+    assert!(report.contains("\"files_to_delete\":2"));
+    assert!(report.contains("\"deleted_paths\":[\"dup-a.txt\",\"dup-b.txt\"]"));
+}
+
 /// Builds a reusable scan result fixture for formatting tests.
 fn build_scan_result() -> ScanResult {
     ScanResult {
@@ -99,5 +121,20 @@ fn build_manifest_diff() -> ManifestDiff {
                 PathBuf::from("removed-b.txt"),
             ],
         }],
+    }
+}
+
+/// Builds a reusable remediation result fixture for formatting tests.
+fn build_remediation_result(apply_changes: bool) -> RemediationResult {
+    RemediationResult {
+        manifest_path: PathBuf::from("scan.json"),
+        apply_changes,
+        groups: vec![RemediationGroup {
+            kept_path: PathBuf::from("keep.txt"),
+            deleted_paths: vec![PathBuf::from("dup-a.txt"), PathBuf::from("dup-b.txt")],
+            file_size_bytes: 16,
+        }],
+        files_to_delete: 2,
+        bytes_to_reclaim: 32,
     }
 }

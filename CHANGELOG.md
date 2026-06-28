@@ -48,3 +48,8 @@
 - Added `--diff <BEFORE> <AFTER>` for comparing two saved JSON manifests and reporting added or removed duplicate groups.
 - Added a manifest JSON parser and diff service so saved exports can be reused without rescanning files.
 - Added formatter, parser, and service tests for manifest diff behavior.
+
+## [1.0.0] - 2026-06-28
+- Added manifest-based remediation with `--remediate <MANIFEST>` and an explicit `--apply` gate for actual deletions.
+- Made dry-run planning the default so duplicate cleanup can be reviewed before any file is removed.
+- Added remediation formatter, CLI, and service tests for both dry-run and applied deletion behavior.

@@ -8,9 +8,11 @@ use std::time::Instant;
 use file_duplicate_finder::config::cli::{parse_cli_args, CliArguments, OutputFormat};
 use file_duplicate_finder::services::duplicate_finder::{build_scan_metrics, run_duplicate_scan};
 use file_duplicate_finder::services::manifest_diff::diff_manifest_files;
+use file_duplicate_finder::services::remediation::remediate_manifest;
 use file_duplicate_finder::utils::formatting::{
     format_duplicate_report_as_json, format_duplicate_report_as_text, format_manifest_diff_as_json,
-    format_manifest_diff_as_text,
+    format_manifest_diff_as_text, format_remediation_result_as_json,
+    format_remediation_result_as_text,
 };
 use file_duplicate_finder::utils::logger::{log_error, log_info};
 use file_duplicate_finder::utils::output_writer::write_report_to_path;
@@ -44,6 +46,10 @@ fn run() -> Result<(), String> {
 
     if let Some((before_path, after_path)) = arguments.diff_paths.clone() {
         return run_manifest_diff(arguments, &before_path, &after_path);
+    }
+
+    if let Some(manifest_path) = arguments.remediation_manifest_path.clone() {
+        return run_remediation(arguments, &manifest_path);
     }
 
     let root_path = arguments
@@ -101,6 +107,56 @@ fn run() -> Result<(), String> {
             (
                 "elapsed_milliseconds",
                 &scan_result.metrics.elapsed_milliseconds.to_string(),
+            ),
+        ],
+    );
+
+    Ok(())
+}
+
+/// Loads a saved manifest, builds a remediation plan, and optionally applies deletions.
+fn run_remediation(arguments: CliArguments, manifest_path: &std::path::Path) -> Result<(), String> {
+    log_info(
+        "remediation_started",
+        &[
+            ("manifest", manifest_path.to_string_lossy().as_ref()),
+            (
+                "apply_changes",
+                if arguments.apply_changes {
+                    "true"
+                } else {
+                    "false"
+                },
+            ),
+        ],
+    );
+
+    let remediation_result = remediate_manifest(manifest_path, arguments.apply_changes)?;
+    let report = match arguments.output_format {
+        OutputFormat::Text => format_remediation_result_as_text(&remediation_result),
+        OutputFormat::Json => format_remediation_result_as_json(&remediation_result),
+    };
+
+    if let Some(output_path) = &arguments.output_path {
+        write_report_to_path(output_path, &report)?;
+        log_info(
+            "report_written",
+            &[("path", output_path.to_string_lossy().as_ref())],
+        );
+    }
+
+    println!("{report}");
+
+    log_info(
+        "remediation_completed",
+        &[
+            (
+                "files_to_delete",
+                &remediation_result.files_to_delete.to_string(),
+            ),
+            (
+                "bytes_to_reclaim",
+                &remediation_result.bytes_to_reclaim.to_string(),
             ),
         ],
     );

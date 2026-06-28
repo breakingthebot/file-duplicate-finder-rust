@@ -4,6 +4,7 @@
 
 use crate::models::duplicate_group::DuplicateGroup;
 use crate::models::manifest_diff::ManifestDiff;
+use crate::models::remediation_result::RemediationResult;
 use crate::models::scan_metrics::ScanMetrics;
 use crate::models::scan_result::ScanResult;
 
@@ -101,6 +102,71 @@ pub fn format_manifest_diff_as_json(manifest_diff: &ManifestDiff) -> String {
         escape_json_string(&manifest_diff.after_label),
         added_groups,
         removed_groups
+    )
+}
+
+/// Builds a readable text report for remediation planning or application results.
+pub fn format_remediation_result_as_text(remediation_result: &RemediationResult) -> String {
+    let mode_label = if remediation_result.apply_changes {
+        "Applied remediation"
+    } else {
+        "Dry-run remediation"
+    };
+    let mut lines = vec![
+        format!("{mode_label}:"),
+        format!("  manifest={}", remediation_result.manifest_path.display()),
+        format!("  groups={}", remediation_result.groups.len()),
+        format!("  files_to_delete={}", remediation_result.files_to_delete),
+        format!("  bytes_to_reclaim={}", remediation_result.bytes_to_reclaim),
+    ];
+
+    for (index, group) in remediation_result.groups.iter().enumerate() {
+        lines.push(format!(
+            "\nGroup {} | keep={} | delete_count={} | bytes_each={}",
+            index + 1,
+            group.kept_path.display(),
+            group.deleted_paths.len(),
+            group.file_size_bytes
+        ));
+
+        for deleted_path in &group.deleted_paths {
+            lines.push(format!("  delete {}", deleted_path.display()));
+        }
+    }
+
+    lines.join("\n")
+}
+
+/// Builds a JSON report for remediation planning or application results.
+pub fn format_remediation_result_as_json(remediation_result: &RemediationResult) -> String {
+    let groups_json = remediation_result
+        .groups
+        .iter()
+        .map(|group| {
+            let deleted_paths = group
+                .deleted_paths
+                .iter()
+                .map(|path| format!("\"{}\"", escape_json_string(&path.to_string_lossy())))
+                .collect::<Vec<String>>()
+                .join(",");
+
+            format!(
+                "{{\"kept_path\":\"{}\",\"deleted_paths\":[{}],\"file_size_bytes\":{}}}",
+                escape_json_string(&group.kept_path.to_string_lossy()),
+                deleted_paths,
+                group.file_size_bytes
+            )
+        })
+        .collect::<Vec<String>>()
+        .join(",");
+
+    format!(
+        "{{\"manifest\":\"{}\",\"apply_changes\":{},\"groups\":[{}],\"files_to_delete\":{},\"bytes_to_reclaim\":{}}}",
+        escape_json_string(&remediation_result.manifest_path.to_string_lossy()),
+        remediation_result.apply_changes,
+        groups_json,
+        remediation_result.files_to_delete,
+        remediation_result.bytes_to_reclaim
     )
 }
 

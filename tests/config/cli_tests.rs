@@ -140,3 +140,23 @@ fn parse_cli_args_reads_manifest_diff_paths() {
     );
     assert_eq!(arguments.output_format, OutputFormat::Json);
 }
+
+#[test]
+/// Confirms that remediation flags can be parsed from the CLI.
+fn parse_cli_args_reads_remediation_flags() {
+    let arguments = parse_cli_args(vec![
+        "--remediate".to_string(),
+        "scan.json".to_string(),
+        "--apply".to_string(),
+        "--format".to_string(),
+        "json".to_string(),
+    ])
+    .expect("arguments should parse");
+
+    assert_eq!(
+        arguments.remediation_manifest_path,
+        Some(PathBuf::from("scan.json"))
+    );
+    assert!(arguments.apply_changes);
+    assert_eq!(arguments.output_format, OutputFormat::Json);
+}

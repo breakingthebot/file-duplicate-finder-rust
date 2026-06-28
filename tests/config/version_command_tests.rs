@@ -15,5 +15,5 @@ fn binary_version_flag_prints_release_banner() {
     assert!(output.status.success());
 
     let stdout = String::from_utf8(output.stdout).expect("stdout should be valid utf-8");
-    assert_eq!(stdout.trim(), "file-duplicate-finder 0.7.0");
+    assert_eq!(stdout.trim(), "file-duplicate-finder 1.0.0");
 }

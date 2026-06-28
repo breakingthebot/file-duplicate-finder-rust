@@ -4,5 +4,6 @@
 
 pub mod duplicate_group;
 pub mod manifest_diff;
+pub mod remediation_result;
 pub mod scan_metrics;
 pub mod scan_result;

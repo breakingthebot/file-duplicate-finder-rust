@@ -17,6 +17,8 @@ const EXCLUDE_FLAG: &str = "--exclude";
 const OUTPUT_FLAG: &str = "--output";
 const CONFIG_FLAG: &str = "--config";
 const DIFF_FLAG: &str = "--diff";
+const REMEDIATE_FLAG: &str = "--remediate";
+const APPLY_FLAG: &str = "--apply";
 
 /// Declares the supported output formats for duplicate scan results.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,6 +32,8 @@ pub enum OutputFormat {
 pub struct CliArguments {
     pub config_path: Option<PathBuf>,
     pub diff_paths: Option<(PathBuf, PathBuf)>,
+    pub remediation_manifest_path: Option<PathBuf>,
+    pub apply_changes: bool,
     pub target_path: Option<PathBuf>,
     pub minimum_size_bytes: u64,
     pub output_format: OutputFormat,
@@ -42,7 +46,7 @@ pub struct CliArguments {
 impl CliArguments {
     /// Returns the command help text shown for `--help`.
     pub fn help_text() -> &'static str {
-        "Usage: file-duplicate-finder [OPTIONS] <DIRECTORY>\n       file-duplicate-finder --diff <BEFORE_MANIFEST> <AFTER_MANIFEST> [OPTIONS]\n\nOptions:\n  --config <PATH>         Load defaults from a key=value config file\n  --diff <A> <B>          Compare two saved JSON manifests\n  --min-size <BYTES>      Only hash files at or above this size\n  --format <text|json>    Select report output format\n  --output <PATH>         Write the rendered report to a file\n  --exclude <RULE>        Skip a name like 'target' or a relative path like 'nested/cache'\n  -h, --help              Show help output\n  -V, --version           Show version output"
+        "Usage: file-duplicate-finder [OPTIONS] <DIRECTORY>\n       file-duplicate-finder --diff <BEFORE_MANIFEST> <AFTER_MANIFEST> [OPTIONS]\n       file-duplicate-finder --remediate <MANIFEST> [--apply] [OPTIONS]\n\nOptions:\n  --config <PATH>         Load defaults from a key=value config file\n  --diff <A> <B>          Compare two saved JSON manifests\n  --remediate <PATH>      Plan or apply duplicate deletion from a saved JSON manifest\n  --apply                 Execute remediation deletions instead of dry-run planning\n  --min-size <BYTES>      Only hash files at or above this size\n  --format <text|json>    Select report output format\n  --output <PATH>         Write the rendered report to a file\n  --exclude <RULE>        Skip a name like 'target' or a relative path like 'nested/cache'\n  -h, --help              Show help output\n  -V, --version           Show version output"
     }
 }
 
@@ -52,6 +56,8 @@ pub fn parse_cli_args(raw_args: Vec<String>) -> Result<CliArguments, String> {
     let mut arguments = CliArguments {
         config_path,
         diff_paths: None,
+        remediation_manifest_path: None,
+        apply_changes: false,
         target_path: None,
         minimum_size_bytes: 1,
         output_format: OutputFormat::Text,
@@ -89,6 +95,17 @@ pub fn parse_cli_args(raw_args: Vec<String>) -> Result<CliArguments, String> {
                     Some((PathBuf::from(before_path), PathBuf::from(after_path)));
                 index += 3;
             }
+            REMEDIATE_FLAG => {
+                let manifest_path = raw_args
+                    .get(index + 1)
+                    .ok_or_else(|| "Missing manifest path for --remediate.".to_string())?;
+                arguments.remediation_manifest_path = Some(PathBuf::from(manifest_path));
+                index += 2;
+            }
+            APPLY_FLAG => {
+                arguments.apply_changes = true;
+                index += 1;
+            }
             MIN_SIZE_FLAG => {
                 let value = raw_args
                     .get(index + 1)
@@ -124,6 +141,11 @@ pub fn parse_cli_args(raw_args: Vec<String>) -> Result<CliArguments, String> {
                 if arguments.diff_paths.is_some() {
                     return Err("A target directory cannot be combined with --diff.".to_string());
                 }
+                if arguments.remediation_manifest_path.is_some() {
+                    return Err(
+                        "A target directory cannot be combined with --remediate.".to_string()
+                    );
+                }
                 if cli_target_path_set {
                     return Err("Only one target directory may be provided.".to_string());
                 }
@@ -133,6 +155,14 @@ pub fn parse_cli_args(raw_args: Vec<String>) -> Result<CliArguments, String> {
                 index += 1;
             }
         }
+    }
+
+    if arguments.apply_changes && arguments.remediation_manifest_path.is_none() {
+        return Err("--apply can only be used with --remediate.".to_string());
+    }
+
+    if arguments.diff_paths.is_some() && arguments.remediation_manifest_path.is_some() {
+        return Err("--diff cannot be combined with --remediate.".to_string());
     }
 
     Ok(arguments)
