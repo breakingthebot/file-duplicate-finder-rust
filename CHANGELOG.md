@@ -13,3 +13,8 @@
 - Added `--format text|json` so duplicate scan results can be consumed by scripts and other tools.
 - Kept text output as the default format to preserve the original terminal experience.
 - Added parser and formatter tests for the new JSON reporting mode.
+
+## [0.3.0] - 2026-06-28
+- Added threaded hashing for same-size candidate files to improve scan throughput on multi-core systems.
+- Kept report ordering stable by sorting hashed results before later duplicate confirmation and output.
+- Added duplicate-finder coverage for larger candidate sets that exercise the parallel hashing path.

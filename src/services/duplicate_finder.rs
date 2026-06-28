@@ -9,8 +9,8 @@ use std::path::{Path, PathBuf};
 use crate::models::duplicate_group::DuplicateGroup;
 use crate::services::content_comparer::files_match;
 use crate::services::directory_scanner::collect_files;
-use crate::services::hash_service::hash_file;
-use crate::utils::logger::{log_debug, log_warning};
+use crate::services::hash_grouping::group_paths_by_hash_parallel;
+use crate::utils::logger::log_debug;
 
 /// Finds groups of duplicate files under the provided root path.
 pub fn find_duplicate_groups(
@@ -34,7 +34,7 @@ pub fn find_duplicate_groups(
             ],
         );
 
-        let hashed_groups = group_paths_by_hash(&same_size_paths);
+        let hashed_groups = group_paths_by_hash_parallel(&same_size_paths);
 
         for (hash, hashed_paths) in hashed_groups {
             if hashed_paths.len() < 2 {
@@ -87,30 +87,6 @@ fn group_paths_by_size(
     Ok(groups)
 }
 
-/// Groups same-size files by their deterministic content hash.
-fn group_paths_by_hash(file_paths: &[PathBuf]) -> HashMap<u64, Vec<PathBuf>> {
-    let mut groups: HashMap<u64, Vec<PathBuf>> = HashMap::new();
-
-    for file_path in file_paths {
-        match hash_file(file_path) {
-            Ok(hash) => {
-                groups.entry(hash).or_default().push(file_path.clone());
-            }
-            Err(error) => {
-                log_warning(
-                    "file_skipped_during_hash",
-                    &[
-                        ("path", file_path.to_string_lossy().as_ref()),
-                        ("error", error.as_str()),
-                    ],
-                );
-            }
-        }
-    }
-
-    groups
-}
-
 /// Splits a hash bucket into true duplicate groups using byte-for-byte comparison.
 fn confirm_duplicate_paths(candidate_paths: &[PathBuf]) -> Result<Vec<PathBuf>, String> {
     let mut confirmed_groups: Vec<Vec<PathBuf>> = Vec::new();
@@ -140,5 +116,11 @@ fn confirm_duplicate_paths(candidate_paths: &[PathBuf]) -> Result<Vec<PathBuf>, 
         .max_by_key(|group| group.len())
         .unwrap_or_default();
 
-    Ok(largest_group)
+    Ok(sort_paths(largest_group))
+}
+
+/// Sorts paths so output stays stable even when hashing happens in parallel.
+fn sort_paths(mut file_paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    file_paths.sort();
+    file_paths
 }

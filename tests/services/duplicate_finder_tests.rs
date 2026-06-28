@@ -44,3 +44,36 @@ fn find_duplicate_groups_returns_matching_files() {
 
     fs::remove_dir_all(root).expect("temporary directory should be removed");
 }
+
+#[test]
+/// Confirms that larger same-size candidate sets still produce stable duplicate groups.
+fn find_duplicate_groups_handles_parallel_hashing_candidates() {
+    let root = create_temp_directory("parallel-duplicates");
+
+    for index in 0..8 {
+        let duplicate_path = root.join(format!("duplicate-{index}.txt"));
+        fs::write(&duplicate_path, "parallel duplicate payload")
+            .expect("duplicate file should be written");
+    }
+
+    for index in 0..4 {
+        let unique_path = root.join(format!("unique-{index}.txt"));
+        fs::write(&unique_path, format!("unique payload {index:02}"))
+            .expect("unique file should be written");
+    }
+
+    let groups = find_duplicate_groups(&root, 1).expect("duplicate scan should succeed");
+
+    assert_eq!(groups.len(), 1);
+    assert_eq!(groups[0].file_paths.len(), 8);
+    assert_eq!(
+        groups[0].file_paths.first(),
+        Some(&root.join("duplicate-0.txt"))
+    );
+    assert_eq!(
+        groups[0].file_paths.last(),
+        Some(&root.join("duplicate-7.txt"))
+    );
+
+    fs::remove_dir_all(root).expect("temporary directory should be removed");
+}

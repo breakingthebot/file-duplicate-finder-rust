@@ -34,10 +34,11 @@ Not applicable. This project is a local CLI tool.
 ## Architecture Notes
 This build is a small command-line tool that walks a folder, groups files by size, hashes only the groups that might actually contain duplicates, and then double-checks matching hashes with a byte-for-byte comparison before reporting them. I split it into small Rust modules so the CLI parsing, logging, directory walking, hashing, duplicate detection, and output formatting can each change independently without turning `main.rs` into a junk drawer.
 
-The first iteration established a correct baseline, and this iteration makes the tool more useful in real automation. Text output is still the default for direct terminal use, while `--format json` gives scripts a stable shape they can parse without scraping human-readable lines.
+The first iteration established a correct baseline, the second iteration made the output automation-friendly, and this iteration improves the expensive hashing phase by spreading same-size candidate files across worker threads. The concurrency is isolated in its own service module so the core scan flow stays readable, while the results are sorted before reporting so parallel work does not make the output flaky.
 
 ## Notes
 - The tool uses a deterministic internal FNV-1a content hash and then confirms duplicates with a byte comparison to avoid false positives from hash collisions.
 - Hidden files are scanned like any other file.
 - Permission errors are logged and skipped so one bad path does not stop the whole scan.
 - Supported output modes are `text` and `json`.
+- Hashing uses Rust's standard library worker threads and scales up to the machine's available parallelism.
