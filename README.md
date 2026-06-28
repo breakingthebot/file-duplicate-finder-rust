@@ -15,6 +15,7 @@ CLI tool that walks a directory tree, hashes file contents, and reports duplicat
 2. Clone the repository.
 3. From the project root, run `cargo test`.
 4. Run the CLI with `cargo run -- <directory>`.
+5. Use `cargo run -- --format json <directory>` when you want machine-readable output.
 
 ## Environment Variables
 No environment variables are required for this project. See `.env.example`.
@@ -24,6 +25,7 @@ No environment variables are required for this project. See `.env.example`.
 cargo fmt
 cargo test
 cargo run -- .\sample-directory
+cargo run -- --format json .\sample-directory
 ```
 
 ## Deployed
@@ -32,10 +34,10 @@ Not applicable. This project is a local CLI tool.
 ## Architecture Notes
 This build is a small command-line tool that walks a folder, groups files by size, hashes only the groups that might actually contain duplicates, and then double-checks matching hashes with a byte-for-byte comparison before reporting them. I split it into small Rust modules so the CLI parsing, logging, directory walking, hashing, duplicate detection, and output formatting can each change independently without turning `main.rs` into a junk drawer.
 
-The goal in the first iteration was to get a real working baseline in place, not a toy demo. That is why the scanner skips unreadable paths with warnings, the duplicate finder avoids unnecessary hashing work by filtering on size first, and the tests cover the logic-bearing modules directly so CI can catch regressions quickly.
+The first iteration established a correct baseline, and this iteration makes the tool more useful in real automation. Text output is still the default for direct terminal use, while `--format json` gives scripts a stable shape they can parse without scraping human-readable lines.
 
 ## Notes
 - The tool uses a deterministic internal FNV-1a content hash and then confirms duplicates with a byte comparison to avoid false positives from hash collisions.
 - Hidden files are scanned like any other file.
 - Permission errors are logged and skipped so one bad path does not stop the whole scan.
-
+- Supported output modes are `text` and `json`.

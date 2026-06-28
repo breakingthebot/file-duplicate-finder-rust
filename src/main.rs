@@ -4,9 +4,11 @@
 
 use std::process::ExitCode;
 
-use file_duplicate_finder::config::cli::{parse_cli_args, CliArguments};
+use file_duplicate_finder::config::cli::{parse_cli_args, CliArguments, OutputFormat};
 use file_duplicate_finder::services::duplicate_finder::find_duplicate_groups;
-use file_duplicate_finder::utils::formatting::format_duplicate_report;
+use file_duplicate_finder::utils::formatting::{
+    format_duplicate_report_as_json, format_duplicate_report_as_text,
+};
 use file_duplicate_finder::utils::logger::{log_error, log_info};
 
 /// Runs the application entrypoint and returns a process-friendly exit code.
@@ -45,7 +47,10 @@ fn run() -> Result<(), String> {
     );
 
     let groups = find_duplicate_groups(&root_path, arguments.minimum_size_bytes)?;
-    let report = format_duplicate_report(&groups);
+    let report = match arguments.output_format {
+        OutputFormat::Text => format_duplicate_report_as_text(&groups),
+        OutputFormat::Json => format_duplicate_report_as_json(&groups),
+    };
     println!("{report}");
 
     log_info(
