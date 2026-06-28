@@ -7,8 +7,10 @@ use std::time::Instant;
 
 use file_duplicate_finder::config::cli::{parse_cli_args, CliArguments, OutputFormat};
 use file_duplicate_finder::services::duplicate_finder::{build_scan_metrics, run_duplicate_scan};
+use file_duplicate_finder::services::manifest_diff::diff_manifest_files;
 use file_duplicate_finder::utils::formatting::{
-    format_duplicate_report_as_json, format_duplicate_report_as_text,
+    format_duplicate_report_as_json, format_duplicate_report_as_text, format_manifest_diff_as_json,
+    format_manifest_diff_as_text,
 };
 use file_duplicate_finder::utils::logger::{log_error, log_info};
 use file_duplicate_finder::utils::output_writer::write_report_to_path;
@@ -38,6 +40,10 @@ fn run() -> Result<(), String> {
     if arguments.show_version {
         println!("{}", build_version_output());
         return Ok(());
+    }
+
+    if let Some((before_path, after_path)) = arguments.diff_paths.clone() {
+        return run_manifest_diff(arguments, &before_path, &after_path);
     }
 
     let root_path = arguments
@@ -95,6 +101,53 @@ fn run() -> Result<(), String> {
             (
                 "elapsed_milliseconds",
                 &scan_result.metrics.elapsed_milliseconds.to_string(),
+            ),
+        ],
+    );
+
+    Ok(())
+}
+
+/// Loads and compares two saved manifests, then prints or exports the diff report.
+fn run_manifest_diff(
+    arguments: CliArguments,
+    before_path: &std::path::Path,
+    after_path: &std::path::Path,
+) -> Result<(), String> {
+    log_info(
+        "manifest_diff_started",
+        &[
+            ("before", before_path.to_string_lossy().as_ref()),
+            ("after", after_path.to_string_lossy().as_ref()),
+        ],
+    );
+
+    let manifest_diff = diff_manifest_files(before_path, after_path)?;
+    let report = match arguments.output_format {
+        OutputFormat::Text => format_manifest_diff_as_text(&manifest_diff),
+        OutputFormat::Json => format_manifest_diff_as_json(&manifest_diff),
+    };
+
+    if let Some(output_path) = &arguments.output_path {
+        write_report_to_path(output_path, &report)?;
+        log_info(
+            "report_written",
+            &[("path", output_path.to_string_lossy().as_ref())],
+        );
+    }
+
+    println!("{report}");
+
+    log_info(
+        "manifest_diff_completed",
+        &[
+            (
+                "added_groups",
+                &manifest_diff.added_groups.len().to_string(),
+            ),
+            (
+                "removed_groups",
+                &manifest_diff.removed_groups.len().to_string(),
             ),
         ],
     );

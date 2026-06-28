@@ -7,3 +7,4 @@ pub mod directory_scanner;
 pub mod duplicate_finder;
 pub mod hash_grouping;
 pub mod hash_service;
+pub mod manifest_diff;

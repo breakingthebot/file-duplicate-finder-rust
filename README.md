@@ -21,6 +21,7 @@ CLI tool that walks a directory tree, hashes file contents, and reports duplicat
 8. Use `cargo run -- --format json --output reports/scan.json <directory>` to save a reusable manifest artifact.
 9. Run `cargo run -- --version` to confirm the exact installed CLI release.
 10. Use `cargo run -- --config .\file-duplicate-finder.conf.example <directory>` to load reusable defaults from a config file.
+11. Use `cargo run -- --diff before.json after.json --format json` to compare two saved JSON manifests.
 
 ## Environment Variables
 No environment variables are required for this project. See `.env.example`.
@@ -35,6 +36,7 @@ cargo run -- --format json .\sample-directory
 cargo run -- --exclude target --exclude nested/cache .\sample-directory
 cargo run -- --format json --output .\reports\scan.json .\sample-directory
 cargo run -- --config .\file-duplicate-finder.conf.example .\sample-directory
+cargo run -- --diff .\reports\before.json .\reports\after.json --format json
 ```
 
 ## Deployed
@@ -43,7 +45,7 @@ Not applicable. This project is a local CLI tool.
 ## Architecture Notes
 This build is a small command-line tool that walks a folder, groups files by size, hashes only the groups that might actually contain duplicates, and then double-checks matching hashes with a byte-for-byte comparison before reporting them. I split it into small Rust modules so the CLI parsing, logging, directory walking, hashing, duplicate detection, and output formatting can each change independently without turning `main.rs` into a junk drawer.
 
-This build is now far enough along that repeated CLI invocations were starting to get noisy. This iteration adds explicit `--config <PATH>` support using a dependency-free `key=value` file format, lets config defaults set things like output format, manifest path, minimum size, and exclusions, and then lets direct CLI flags override those values when needed. That keeps the project lightweight while still giving teams a reusable way to share scan defaults.
+The tool now has two layers of reusable automation: config files for repeatable scan inputs, and manifest diffs for comparing exported JSON results over time. This iteration adds `--diff <BEFORE> <AFTER>` as a separate command path that loads the project's own JSON manifest format, compares duplicate groups by stable signatures, and reports which groups were added or removed without rerunning the original scans.
 
 ## Notes
 - The tool uses a deterministic internal FNV-1a content hash and then confirms duplicates with a byte comparison to avoid false positives from hash collisions.
@@ -56,3 +58,4 @@ This build is now far enough along that repeated CLI invocations were starting t
 - `--output <PATH>` writes the same rendered report to disk and creates missing parent directories automatically.
 - `--version` now prints a standardized release banner in the form `file-duplicate-finder 0.7.0`.
 - `--config <PATH>` loads defaults from a simple key-value file where repeated `exclude=...` lines are allowed and CLI flags take precedence.
+- `--diff <BEFORE> <AFTER>` compares two saved JSON manifests; it is intentionally scoped to the machine-readable export format, not the human-readable text report.

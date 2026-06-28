@@ -4,5 +4,6 @@
 
 pub mod formatting;
 pub mod logger;
+pub mod manifest_json;
 pub mod output_writer;
 pub mod release_metadata;

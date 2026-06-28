@@ -16,6 +16,7 @@ const FORMAT_FLAG: &str = "--format";
 const EXCLUDE_FLAG: &str = "--exclude";
 const OUTPUT_FLAG: &str = "--output";
 const CONFIG_FLAG: &str = "--config";
+const DIFF_FLAG: &str = "--diff";
 
 /// Declares the supported output formats for duplicate scan results.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,6 +29,7 @@ pub enum OutputFormat {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CliArguments {
     pub config_path: Option<PathBuf>,
+    pub diff_paths: Option<(PathBuf, PathBuf)>,
     pub target_path: Option<PathBuf>,
     pub minimum_size_bytes: u64,
     pub output_format: OutputFormat,
@@ -40,7 +42,7 @@ pub struct CliArguments {
 impl CliArguments {
     /// Returns the command help text shown for `--help`.
     pub fn help_text() -> &'static str {
-        "Usage: file-duplicate-finder [OPTIONS] <DIRECTORY>\n\nOptions:\n  --config <PATH>         Load defaults from a key=value config file\n  --min-size <BYTES>      Only hash files at or above this size\n  --format <text|json>    Select report output format\n  --output <PATH>         Write the rendered report to a file\n  --exclude <RULE>        Skip a name like 'target' or a relative path like 'nested/cache'\n  -h, --help              Show help output\n  -V, --version           Show version output"
+        "Usage: file-duplicate-finder [OPTIONS] <DIRECTORY>\n       file-duplicate-finder --diff <BEFORE_MANIFEST> <AFTER_MANIFEST> [OPTIONS]\n\nOptions:\n  --config <PATH>         Load defaults from a key=value config file\n  --diff <A> <B>          Compare two saved JSON manifests\n  --min-size <BYTES>      Only hash files at or above this size\n  --format <text|json>    Select report output format\n  --output <PATH>         Write the rendered report to a file\n  --exclude <RULE>        Skip a name like 'target' or a relative path like 'nested/cache'\n  -h, --help              Show help output\n  -V, --version           Show version output"
     }
 }
 
@@ -49,6 +51,7 @@ pub fn parse_cli_args(raw_args: Vec<String>) -> Result<CliArguments, String> {
     let config_path = find_config_path(&raw_args)?;
     let mut arguments = CliArguments {
         config_path,
+        diff_paths: None,
         target_path: None,
         minimum_size_bytes: 1,
         output_format: OutputFormat::Text,
@@ -74,6 +77,17 @@ pub fn parse_cli_args(raw_args: Vec<String>) -> Result<CliArguments, String> {
             }
             CONFIG_FLAG => {
                 index += 2;
+            }
+            DIFF_FLAG => {
+                let before_path = raw_args
+                    .get(index + 1)
+                    .ok_or_else(|| "Missing first manifest path for --diff.".to_string())?;
+                let after_path = raw_args
+                    .get(index + 2)
+                    .ok_or_else(|| "Missing second manifest path for --diff.".to_string())?;
+                arguments.diff_paths =
+                    Some((PathBuf::from(before_path), PathBuf::from(after_path)));
+                index += 3;
             }
             MIN_SIZE_FLAG => {
                 let value = raw_args
@@ -107,6 +121,9 @@ pub fn parse_cli_args(raw_args: Vec<String>) -> Result<CliArguments, String> {
                 return Err(format!("Unknown option: {token}"));
             }
             token => {
+                if arguments.diff_paths.is_some() {
+                    return Err("A target directory cannot be combined with --diff.".to_string());
+                }
                 if cli_target_path_set {
                     return Err("Only one target directory may be provided.".to_string());
                 }

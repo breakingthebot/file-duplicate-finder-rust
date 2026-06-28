@@ -43,3 +43,8 @@
 - Added `--config <PATH>` support for loading reusable scan defaults from a simple `key=value` config file.
 - Added an example config artifact and CLI precedence rules so direct flags override config values cleanly.
 - Added config parser and merge tests for file-based defaults.
+
+## [0.9.0] - 2026-06-28
+- Added `--diff <BEFORE> <AFTER>` for comparing two saved JSON manifests and reporting added or removed duplicate groups.
+- Added a manifest JSON parser and diff service so saved exports can be reused without rescanning files.
+- Added formatter, parser, and service tests for manifest diff behavior.

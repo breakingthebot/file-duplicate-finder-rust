@@ -1,8 +1,9 @@
-// Formats duplicate scan results into user-facing CLI output.
-// Connects to: src/main.rs, src/models/scan_result.rs
+// Formats duplicate scan and manifest diff results into user-facing CLI output.
+// Connects to: src/main.rs, src/models/scan_result.rs, src/models/manifest_diff.rs
 // Created: 2026-06-28
 
 use crate::models::duplicate_group::DuplicateGroup;
+use crate::models::manifest_diff::ManifestDiff;
 use crate::models::scan_metrics::ScanMetrics;
 use crate::models::scan_result::ScanResult;
 
@@ -55,6 +56,54 @@ pub fn format_duplicate_report_as_json(scan_result: &ScanResult) -> String {
     )
 }
 
+/// Builds a readable text report for manifest diff results.
+pub fn format_manifest_diff_as_text(manifest_diff: &ManifestDiff) -> String {
+    let mut lines = vec![
+        format!("Comparing manifests:"),
+        format!("  before={}", manifest_diff.before_label),
+        format!("  after={}", manifest_diff.after_label),
+        String::new(),
+        format!(
+            "Added duplicate group(s): {}",
+            manifest_diff.added_groups.len()
+        ),
+    ];
+
+    append_group_lines(&mut lines, &manifest_diff.added_groups);
+    lines.push(String::new());
+    lines.push(format!(
+        "Removed duplicate group(s): {}",
+        manifest_diff.removed_groups.len()
+    ));
+    append_group_lines(&mut lines, &manifest_diff.removed_groups);
+
+    lines.join("\n")
+}
+
+/// Builds a JSON report for manifest diff results without external dependencies.
+pub fn format_manifest_diff_as_json(manifest_diff: &ManifestDiff) -> String {
+    let added_groups = manifest_diff
+        .added_groups
+        .iter()
+        .map(format_group_as_json)
+        .collect::<Vec<String>>()
+        .join(",");
+    let removed_groups = manifest_diff
+        .removed_groups
+        .iter()
+        .map(format_group_as_json)
+        .collect::<Vec<String>>()
+        .join(",");
+
+    format!(
+        "{{\"before\":\"{}\",\"after\":\"{}\",\"added_groups\":[{}],\"removed_groups\":[{}]}}",
+        escape_json_string(&manifest_diff.before_label),
+        escape_json_string(&manifest_diff.after_label),
+        added_groups,
+        removed_groups
+    )
+}
+
 /// Builds the JSON object for one duplicate group.
 fn format_group_as_json(group: &DuplicateGroup) -> String {
     let file_paths = group
@@ -68,6 +117,22 @@ fn format_group_as_json(group: &DuplicateGroup) -> String {
         "{{\"hash\":\"{:016x}\",\"file_size_bytes\":{},\"file_paths\":[{}]}}",
         group.hash, group.file_size_bytes, file_paths
     )
+}
+
+/// Appends formatted duplicate group lines to an existing text buffer.
+fn append_group_lines(lines: &mut Vec<String>, groups: &[DuplicateGroup]) {
+    for (index, group) in groups.iter().enumerate() {
+        lines.push(format!(
+            "\nGroup {} | size={} bytes | hash={:016x}",
+            index + 1,
+            group.file_size_bytes,
+            group.hash
+        ));
+
+        for path in &group.file_paths {
+            lines.push(format!("  {}", path.display()));
+        }
+    }
 }
 
 /// Builds the text block for aggregate scan metrics.

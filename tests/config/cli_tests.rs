@@ -121,3 +121,22 @@ fn parse_cli_args_merges_config_defaults_with_cli_overrides() {
 
     fs::remove_dir_all(root).expect("temporary directory should be removed");
 }
+
+#[test]
+/// Confirms that manifest diff paths can be parsed from the CLI.
+fn parse_cli_args_reads_manifest_diff_paths() {
+    let arguments = parse_cli_args(vec![
+        "--diff".to_string(),
+        "before.json".to_string(),
+        "after.json".to_string(),
+        "--format".to_string(),
+        "json".to_string(),
+    ])
+    .expect("arguments should parse");
+
+    assert_eq!(
+        arguments.diff_paths,
+        Some((PathBuf::from("before.json"), PathBuf::from("after.json")))
+    );
+    assert_eq!(arguments.output_format, OutputFormat::Json);
+}
