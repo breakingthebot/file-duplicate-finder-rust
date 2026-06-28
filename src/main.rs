@@ -11,6 +11,7 @@ use file_duplicate_finder::utils::formatting::{
     format_duplicate_report_as_json, format_duplicate_report_as_text,
 };
 use file_duplicate_finder::utils::logger::{log_error, log_info};
+use file_duplicate_finder::utils::output_writer::write_report_to_path;
 
 /// Runs the application entrypoint and returns a process-friendly exit code.
 fn main() -> ExitCode {
@@ -64,6 +65,15 @@ fn run() -> Result<(), String> {
         OutputFormat::Text => format_duplicate_report_as_text(&scan_result),
         OutputFormat::Json => format_duplicate_report_as_json(&scan_result),
     };
+
+    if let Some(output_path) = &arguments.output_path {
+        write_report_to_path(output_path, &report)?;
+        log_info(
+            "report_written",
+            &[("path", output_path.to_string_lossy().as_ref())],
+        );
+    }
+
     println!("{report}");
 
     log_info(

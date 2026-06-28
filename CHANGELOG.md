@@ -28,3 +28,8 @@
 - Added summary metrics for files scanned, bytes scanned, duplicate groups, duplicate files, duplicate bytes, and elapsed time.
 - Included metrics in both text and JSON output so terminal users and scripts see the same scan totals.
 - Added scan-result and formatter coverage for the new reporting fields.
+
+## [0.6.0] - 2026-06-28
+- Added `--output <PATH>` so rendered text or JSON reports can be saved as manifest files.
+- Created output directories automatically for export targets and rejected directory paths used as file outputs.
+- Added CLI parsing and output-writer tests for saved report behavior.

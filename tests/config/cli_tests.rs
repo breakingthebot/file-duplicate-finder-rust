@@ -18,6 +18,7 @@ fn parse_cli_args_reads_directory_and_minimum_size() {
 
     assert_eq!(arguments.minimum_size_bytes, 10);
     assert_eq!(arguments.output_format, OutputFormat::Text);
+    assert_eq!(arguments.output_path, None);
     assert_eq!(arguments.scan_filter.excluded_names.len(), 0);
     assert_eq!(arguments.target_path, Some(PathBuf::from("sample")));
 }
@@ -52,5 +53,21 @@ fn parse_cli_args_reads_exclude_rules() {
     assert_eq!(
         arguments.scan_filter.excluded_relative_paths,
         vec![vec!["nested".to_string(), "cache".to_string()]]
+    );
+}
+
+#[test]
+/// Confirms that the parser accepts a report output path.
+fn parse_cli_args_reads_output_path() {
+    let arguments = parse_cli_args(vec![
+        "--output".to_string(),
+        "reports/scan.json".to_string(),
+        "sample".to_string(),
+    ])
+    .expect("arguments should parse");
+
+    assert_eq!(
+        arguments.output_path,
+        Some(PathBuf::from("reports/scan.json"))
     );
 }

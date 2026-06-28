@@ -3,3 +3,4 @@
 // Created: 2026-06-28
 
 mod formatting_tests;
+mod output_writer_tests;

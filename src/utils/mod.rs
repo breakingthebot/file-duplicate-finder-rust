@@ -4,3 +4,4 @@
 
 pub mod formatting;
 pub mod logger;
+pub mod output_writer;
