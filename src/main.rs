@@ -46,7 +46,11 @@ fn run() -> Result<(), String> {
         &[("root", root_path.to_string_lossy().as_ref())],
     );
 
-    let groups = find_duplicate_groups(&root_path, arguments.minimum_size_bytes)?;
+    let groups = find_duplicate_groups(
+        &root_path,
+        arguments.minimum_size_bytes,
+        &arguments.scan_filter,
+    )?;
     let report = match arguments.output_format {
         OutputFormat::Text => format_duplicate_report_as_text(&groups),
         OutputFormat::Json => format_duplicate_report_as_json(&groups),

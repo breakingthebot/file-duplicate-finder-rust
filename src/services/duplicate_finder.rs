@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::config::scan_filter::ScanFilter;
 use crate::models::duplicate_group::DuplicateGroup;
 use crate::services::content_comparer::files_match;
 use crate::services::directory_scanner::collect_files;
@@ -16,8 +17,9 @@ use crate::utils::logger::log_debug;
 pub fn find_duplicate_groups(
     root_path: &Path,
     minimum_size_bytes: u64,
+    scan_filter: &ScanFilter,
 ) -> Result<Vec<DuplicateGroup>, String> {
-    let file_paths = collect_files(root_path)?;
+    let file_paths = collect_files(root_path, scan_filter)?;
     let size_groups = group_paths_by_size(file_paths, minimum_size_bytes)?;
     let mut duplicate_groups = Vec::new();
 

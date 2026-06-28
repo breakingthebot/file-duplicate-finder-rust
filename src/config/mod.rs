@@ -3,3 +3,4 @@
 // Created: 2026-06-28
 
 pub mod cli;
+pub mod scan_filter;

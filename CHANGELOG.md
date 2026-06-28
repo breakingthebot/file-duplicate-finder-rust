@@ -18,3 +18,8 @@
 - Added threaded hashing for same-size candidate files to improve scan throughput on multi-core systems.
 - Kept report ordering stable by sorting hashed results before later duplicate confirmation and output.
 - Added duplicate-finder coverage for larger candidate sets that exercise the parallel hashing path.
+
+## [0.4.0] - 2026-06-28
+- Added repeated `--exclude` rules so scans can skip unwanted names like `target` and relative paths like `nested/cache`.
+- Applied exclusions during directory walking so ignored subtrees are never hashed or compared.
+- Added CLI and duplicate-finder tests for exclusion parsing and filtered scan behavior.
