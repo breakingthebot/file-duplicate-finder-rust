@@ -1,0 +1,17 @@
+# Keeps local build artifacts, secrets, and workspace-only files out of version control.
+# Connects to: git, Cargo builds, local editor settings
+# Created: 2026-06-28
+
+.env
+venv/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+*.log
+dist/
+build/
+target/
+Cargo.lock
+AGENTS.md
+

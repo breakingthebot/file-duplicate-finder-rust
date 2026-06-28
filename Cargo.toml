@@ -1,0 +1,24 @@
+# Defines the Rust package metadata and build targets for the duplicate finder CLI.
+# Connects to: src/main.rs, src/lib.rs, GitHub Actions CI
+# Created: 2026-06-28
+
+[package]
+name = "file-duplicate-finder"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "CLI tool that walks a directory tree and finds duplicate files by hash."
+repository = "https://github.com/breakingthebot/file-duplicate-finder-rust"
+
+[lib]
+name = "file_duplicate_finder"
+path = "src/lib.rs"
+
+[[bin]]
+name = "file-duplicate-finder"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
