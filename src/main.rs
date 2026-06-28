@@ -12,6 +12,7 @@ use file_duplicate_finder::utils::formatting::{
 };
 use file_duplicate_finder::utils::logger::{log_error, log_info};
 use file_duplicate_finder::utils::output_writer::write_report_to_path;
+use file_duplicate_finder::utils::release_metadata::build_version_output;
 
 /// Runs the application entrypoint and returns a process-friendly exit code.
 fn main() -> ExitCode {
@@ -35,7 +36,7 @@ fn run() -> Result<(), String> {
     }
 
     if arguments.show_version {
-        println!("{}", env!("CARGO_PKG_VERSION"));
+        println!("{}", build_version_output());
         return Ok(());
     }
 

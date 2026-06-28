@@ -4,11 +4,16 @@
 
 [package]
 name = "file-duplicate-finder"
-version = "0.1.0"
+version = "0.7.0"
 edition = "2021"
+rust-version = "1.89"
 license = "MIT"
 description = "CLI tool that walks a directory tree and finds duplicate files by hash."
 repository = "https://github.com/breakingthebot/file-duplicate-finder-rust"
+homepage = "https://github.com/breakingthebot/file-duplicate-finder-rust"
+readme = "README.md"
+keywords = ["cli", "dedupe", "duplicates", "filesystem", "rust"]
+categories = ["command-line-utilities", "filesystem"]
 
 [lib]
 name = "file_duplicate_finder"

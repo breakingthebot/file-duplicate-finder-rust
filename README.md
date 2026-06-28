@@ -19,6 +19,7 @@ CLI tool that walks a directory tree, hashes file contents, and reports duplicat
 6. Use `cargo run -- --exclude target --exclude nested/cache <directory>` to skip unwanted folders or files.
 7. Review the summary block at the end of each run to see scan volume, duplicate volume, and elapsed time.
 8. Use `cargo run -- --format json --output reports/scan.json <directory>` to save a reusable manifest artifact.
+9. Run `cargo run -- --version` to confirm the exact installed CLI release.
 
 ## Environment Variables
 No environment variables are required for this project. See `.env.example`.
@@ -27,6 +28,7 @@ No environment variables are required for this project. See `.env.example`.
 ```powershell
 cargo fmt
 cargo test
+cargo run -- --version
 cargo run -- .\sample-directory
 cargo run -- --format json .\sample-directory
 cargo run -- --exclude target --exclude nested/cache .\sample-directory
@@ -39,7 +41,7 @@ Not applicable. This project is a local CLI tool.
 ## Architecture Notes
 This build is a small command-line tool that walks a folder, groups files by size, hashes only the groups that might actually contain duplicates, and then double-checks matching hashes with a byte-for-byte comparison before reporting them. I split it into small Rust modules so the CLI parsing, logging, directory walking, hashing, duplicate detection, and output formatting can each change independently without turning `main.rs` into a junk drawer.
 
-The first iteration established a correct baseline, the second iteration made the output automation-friendly, the third iteration improved hashing throughput with worker threads, the fourth iteration added scan filters, the fifth iteration added metrics, and this iteration makes results easier to preserve by exporting the rendered report to disk. The CLI still produces one canonical text or JSON report shape, but it can now save that same artifact to a file path without duplicating report-generation logic.
+The first iteration established a correct baseline, the second iteration made the output automation-friendly, the third iteration improved hashing throughput with worker threads, the fourth iteration added scan filters, the fifth iteration added metrics, the sixth iteration added manifest export, and this iteration tightens the release surface itself. The package metadata is now aligned with the shipped feature set, `--version` prints a standard `name version` banner, and that release-facing behavior is covered by tests against the compiled binary rather than only internal helpers.
 
 ## Notes
 - The tool uses a deterministic internal FNV-1a content hash and then confirms duplicates with a byte comparison to avoid false positives from hash collisions.
@@ -50,3 +52,4 @@ The first iteration established a correct baseline, the second iteration made th
 - `--exclude name` skips any file or directory with that exact name, and `--exclude path/to/node` skips that relative path from the scan root.
 - Every run now reports `files_scanned`, `bytes_scanned`, `duplicate_groups`, `duplicate_files`, `duplicate_bytes`, and `elapsed_milliseconds`.
 - `--output <PATH>` writes the same rendered report to disk and creates missing parent directories automatically.
+- `--version` now prints a standardized release banner in the form `file-duplicate-finder 0.7.0`.

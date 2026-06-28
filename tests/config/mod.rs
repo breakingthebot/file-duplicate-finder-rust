@@ -3,3 +3,4 @@
 // Created: 2026-06-28
 
 mod cli_tests;
+mod version_command_tests;

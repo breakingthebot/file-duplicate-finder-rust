@@ -33,3 +33,8 @@
 - Added `--output <PATH>` so rendered text or JSON reports can be saved as manifest files.
 - Created output directories automatically for export targets and rejected directory paths used as file outputs.
 - Added CLI parsing and output-writer tests for saved report behavior.
+
+## [0.7.0] - 2026-06-28
+- Synced package metadata to the current shipped release and added richer Cargo package fields for distribution.
+- Standardized `--version` output to `file-duplicate-finder 0.7.0` instead of printing only the raw version number.
+- Added unit and binary-level tests for release-facing version behavior.

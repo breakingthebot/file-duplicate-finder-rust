@@ -4,3 +4,4 @@
 
 mod formatting_tests;
 mod output_writer_tests;
+mod release_metadata_tests;
