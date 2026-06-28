@@ -20,6 +20,7 @@ CLI tool that walks a directory tree, hashes file contents, and reports duplicat
 7. Review the summary block at the end of each run to see scan volume, duplicate volume, and elapsed time.
 8. Use `cargo run -- --format json --output reports/scan.json <directory>` to save a reusable manifest artifact.
 9. Run `cargo run -- --version` to confirm the exact installed CLI release.
+10. Use `cargo run -- --config .\file-duplicate-finder.conf.example <directory>` to load reusable defaults from a config file.
 
 ## Environment Variables
 No environment variables are required for this project. See `.env.example`.
@@ -33,6 +34,7 @@ cargo run -- .\sample-directory
 cargo run -- --format json .\sample-directory
 cargo run -- --exclude target --exclude nested/cache .\sample-directory
 cargo run -- --format json --output .\reports\scan.json .\sample-directory
+cargo run -- --config .\file-duplicate-finder.conf.example .\sample-directory
 ```
 
 ## Deployed
@@ -41,7 +43,7 @@ Not applicable. This project is a local CLI tool.
 ## Architecture Notes
 This build is a small command-line tool that walks a folder, groups files by size, hashes only the groups that might actually contain duplicates, and then double-checks matching hashes with a byte-for-byte comparison before reporting them. I split it into small Rust modules so the CLI parsing, logging, directory walking, hashing, duplicate detection, and output formatting can each change independently without turning `main.rs` into a junk drawer.
 
-The first iteration established a correct baseline, the second iteration made the output automation-friendly, the third iteration improved hashing throughput with worker threads, the fourth iteration added scan filters, the fifth iteration added metrics, the sixth iteration added manifest export, and this iteration tightens the release surface itself. The package metadata is now aligned with the shipped feature set, `--version` prints a standard `name version` banner, and that release-facing behavior is covered by tests against the compiled binary rather than only internal helpers.
+This build is now far enough along that repeated CLI invocations were starting to get noisy. This iteration adds explicit `--config <PATH>` support using a dependency-free `key=value` file format, lets config defaults set things like output format, manifest path, minimum size, and exclusions, and then lets direct CLI flags override those values when needed. That keeps the project lightweight while still giving teams a reusable way to share scan defaults.
 
 ## Notes
 - The tool uses a deterministic internal FNV-1a content hash and then confirms duplicates with a byte comparison to avoid false positives from hash collisions.
@@ -53,3 +55,4 @@ The first iteration established a correct baseline, the second iteration made th
 - Every run now reports `files_scanned`, `bytes_scanned`, `duplicate_groups`, `duplicate_files`, `duplicate_bytes`, and `elapsed_milliseconds`.
 - `--output <PATH>` writes the same rendered report to disk and creates missing parent directories automatically.
 - `--version` now prints a standardized release banner in the form `file-duplicate-finder 0.7.0`.
+- `--config <PATH>` loads defaults from a simple key-value file where repeated `exclude=...` lines are allowed and CLI flags take precedence.

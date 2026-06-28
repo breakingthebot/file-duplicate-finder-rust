@@ -38,3 +38,8 @@
 - Synced package metadata to the current shipped release and added richer Cargo package fields for distribution.
 - Standardized `--version` output to `file-duplicate-finder 0.7.0` instead of printing only the raw version number.
 - Added unit and binary-level tests for release-facing version behavior.
+
+## [0.8.0] - 2026-06-28
+- Added `--config <PATH>` support for loading reusable scan defaults from a simple `key=value` config file.
+- Added an example config artifact and CLI precedence rules so direct flags override config values cleanly.
+- Added config parser and merge tests for file-based defaults.

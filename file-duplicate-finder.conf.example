@@ -1,0 +1,10 @@
+# Example config file for the file-duplicate-finder CLI.
+# Connects to: src/config/file_config.rs, README.md
+# Created: 2026-06-28
+
+# target_path=./sample-directory
+# min_size=1024
+# format=json
+# output=./reports/scan.json
+# exclude=target
+# exclude=nested/cache
