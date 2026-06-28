@@ -3,3 +3,5 @@
 // Created: 2026-06-28
 
 pub mod duplicate_group;
+pub mod scan_metrics;
+pub mod scan_result;

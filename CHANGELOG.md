@@ -23,3 +23,8 @@
 - Added repeated `--exclude` rules so scans can skip unwanted names like `target` and relative paths like `nested/cache`.
 - Applied exclusions during directory walking so ignored subtrees are never hashed or compared.
 - Added CLI and duplicate-finder tests for exclusion parsing and filtered scan behavior.
+
+## [0.5.0] - 2026-06-28
+- Added summary metrics for files scanned, bytes scanned, duplicate groups, duplicate files, duplicate bytes, and elapsed time.
+- Included metrics in both text and JSON output so terminal users and scripts see the same scan totals.
+- Added scan-result and formatter coverage for the new reporting fields.

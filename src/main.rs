@@ -3,9 +3,10 @@
 // Created: 2026-06-28
 
 use std::process::ExitCode;
+use std::time::Instant;
 
 use file_duplicate_finder::config::cli::{parse_cli_args, CliArguments, OutputFormat};
-use file_duplicate_finder::services::duplicate_finder::find_duplicate_groups;
+use file_duplicate_finder::services::duplicate_finder::{build_scan_metrics, run_duplicate_scan};
 use file_duplicate_finder::utils::formatting::{
     format_duplicate_report_as_json, format_duplicate_report_as_text,
 };
@@ -46,20 +47,45 @@ fn run() -> Result<(), String> {
         &[("root", root_path.to_string_lossy().as_ref())],
     );
 
-    let groups = find_duplicate_groups(
+    let started_at = Instant::now();
+    let mut scan_result = run_duplicate_scan(
         &root_path,
         arguments.minimum_size_bytes,
         &arguments.scan_filter,
     )?;
+    scan_result.metrics = build_scan_metrics(
+        &scan_result.duplicate_groups,
+        scan_result.metrics.files_scanned,
+        scan_result.metrics.bytes_scanned,
+        started_at.elapsed().as_millis(),
+    );
+
     let report = match arguments.output_format {
-        OutputFormat::Text => format_duplicate_report_as_text(&groups),
-        OutputFormat::Json => format_duplicate_report_as_json(&groups),
+        OutputFormat::Text => format_duplicate_report_as_text(&scan_result),
+        OutputFormat::Json => format_duplicate_report_as_json(&scan_result),
     };
     println!("{report}");
 
     log_info(
         "scan_completed",
-        &[("duplicate_groups", &groups.len().to_string())],
+        &[
+            (
+                "duplicate_groups",
+                &scan_result.metrics.duplicate_groups.to_string(),
+            ),
+            (
+                "files_scanned",
+                &scan_result.metrics.files_scanned.to_string(),
+            ),
+            (
+                "bytes_scanned",
+                &scan_result.metrics.bytes_scanned.to_string(),
+            ),
+            (
+                "elapsed_milliseconds",
+                &scan_result.metrics.elapsed_milliseconds.to_string(),
+            ),
+        ],
     );
 
     Ok(())

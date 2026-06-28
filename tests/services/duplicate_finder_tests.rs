@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use file_duplicate_finder::config::scan_filter::ScanFilter;
-use file_duplicate_finder::services::duplicate_finder::find_duplicate_groups;
+use file_duplicate_finder::services::duplicate_finder::run_duplicate_scan;
 
 /// Creates a unique temporary test directory under the system temp path.
 fn create_temp_directory(test_name: &str) -> PathBuf {
@@ -36,13 +36,18 @@ fn find_duplicate_groups_returns_matching_files() {
     fs::write(&second_duplicate, "duplicate text").expect("second duplicate should be written");
     fs::write(&unique_file, "unique text").expect("unique file should be written");
 
-    let groups = find_duplicate_groups(&root, 1, &ScanFilter::empty())
-        .expect("duplicate scan should succeed");
+    let scan_result =
+        run_duplicate_scan(&root, 1, &ScanFilter::empty()).expect("duplicate scan should succeed");
+    let groups = scan_result.duplicate_groups;
 
     assert_eq!(groups.len(), 1);
     assert_eq!(groups[0].file_paths.len(), 2);
     assert!(groups[0].file_paths.contains(&first_duplicate));
     assert!(groups[0].file_paths.contains(&second_duplicate));
+    assert_eq!(scan_result.metrics.files_scanned, 3);
+    assert_eq!(scan_result.metrics.duplicate_groups, 1);
+    assert_eq!(scan_result.metrics.duplicate_files, 2);
+    assert_eq!(scan_result.metrics.duplicate_bytes, 28);
 
     fs::remove_dir_all(root).expect("temporary directory should be removed");
 }
@@ -64,8 +69,9 @@ fn find_duplicate_groups_handles_parallel_hashing_candidates() {
             .expect("unique file should be written");
     }
 
-    let groups = find_duplicate_groups(&root, 1, &ScanFilter::empty())
-        .expect("duplicate scan should succeed");
+    let scan_result =
+        run_duplicate_scan(&root, 1, &ScanFilter::empty()).expect("duplicate scan should succeed");
+    let groups = scan_result.duplicate_groups;
 
     assert_eq!(groups.len(), 1);
     assert_eq!(groups[0].file_paths.len(), 8);
@@ -77,6 +83,8 @@ fn find_duplicate_groups_handles_parallel_hashing_candidates() {
         groups[0].file_paths.last(),
         Some(&root.join("duplicate-7.txt"))
     );
+    assert_eq!(scan_result.metrics.files_scanned, 12);
+    assert_eq!(scan_result.metrics.duplicate_files, 8);
 
     fs::remove_dir_all(root).expect("temporary directory should be removed");
 }
@@ -108,8 +116,9 @@ fn find_duplicate_groups_skips_excluded_names_and_paths() {
         .add_exclusion("nested/cache")
         .expect("path exclusion should parse");
 
-    let groups =
-        find_duplicate_groups(&root, 1, &scan_filter).expect("duplicate scan should succeed");
+    let scan_result =
+        run_duplicate_scan(&root, 1, &scan_filter).expect("duplicate scan should succeed");
+    let groups = scan_result.duplicate_groups;
 
     assert_eq!(groups.len(), 1);
     assert_eq!(groups[0].file_paths.len(), 2);
@@ -117,6 +126,8 @@ fn find_duplicate_groups_skips_excluded_names_and_paths() {
     assert!(groups[0].file_paths.contains(&included_second));
     assert!(!groups[0].file_paths.contains(&ignored_file));
     assert!(!groups[0].file_paths.contains(&cached_file));
+    assert_eq!(scan_result.metrics.files_scanned, 2);
+    assert_eq!(scan_result.metrics.duplicate_files, 2);
 
     fs::remove_dir_all(root).expect("temporary directory should be removed");
 }

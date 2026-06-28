@@ -1,18 +1,26 @@
 // Formats duplicate scan results into user-facing CLI output.
-// Connects to: src/main.rs, src/models/duplicate_group.rs
+// Connects to: src/main.rs, src/models/scan_result.rs
 // Created: 2026-06-28
 
 use crate::models::duplicate_group::DuplicateGroup;
+use crate::models::scan_metrics::ScanMetrics;
+use crate::models::scan_result::ScanResult;
 
 /// Builds a readable text report for duplicate scan results.
-pub fn format_duplicate_report_as_text(groups: &[DuplicateGroup]) -> String {
-    if groups.is_empty() {
-        return "No duplicate files found.".to_string();
+pub fn format_duplicate_report_as_text(scan_result: &ScanResult) -> String {
+    if scan_result.duplicate_groups.is_empty() {
+        return format!(
+            "No duplicate files found.\n\n{}",
+            format_metrics_as_text(&scan_result.metrics)
+        );
     }
 
-    let mut lines = vec![format!("Found {} duplicate group(s):", groups.len())];
+    let mut lines = vec![format!(
+        "Found {} duplicate group(s):",
+        scan_result.duplicate_groups.len()
+    )];
 
-    for (index, group) in groups.iter().enumerate() {
+    for (index, group) in scan_result.duplicate_groups.iter().enumerate() {
         lines.push(format!(
             "\nGroup {} | size={} bytes | hash={:016x}",
             index + 1,
@@ -25,20 +33,24 @@ pub fn format_duplicate_report_as_text(groups: &[DuplicateGroup]) -> String {
         }
     }
 
+    lines.push(String::new());
+    lines.push(format_metrics_as_text(&scan_result.metrics));
+
     lines.join("\n")
 }
 
 /// Builds a JSON report for duplicate scan results without external dependencies.
-pub fn format_duplicate_report_as_json(groups: &[DuplicateGroup]) -> String {
-    let duplicate_groups = groups
+pub fn format_duplicate_report_as_json(scan_result: &ScanResult) -> String {
+    let duplicate_groups = scan_result
+        .duplicate_groups
         .iter()
         .map(format_group_as_json)
         .collect::<Vec<String>>()
         .join(",");
 
     format!(
-        "{{\"duplicate_group_count\":{},\"groups\":[{}]}}",
-        groups.len(),
+        "{{\"metrics\":{},\"groups\":[{}]}}",
+        format_metrics_as_json(&scan_result.metrics),
         duplicate_groups
     )
 }
@@ -55,6 +67,33 @@ fn format_group_as_json(group: &DuplicateGroup) -> String {
     format!(
         "{{\"hash\":\"{:016x}\",\"file_size_bytes\":{},\"file_paths\":[{}]}}",
         group.hash, group.file_size_bytes, file_paths
+    )
+}
+
+/// Builds the text block for aggregate scan metrics.
+fn format_metrics_as_text(metrics: &ScanMetrics) -> String {
+    [
+        "Summary:".to_string(),
+        format!("  files_scanned={}", metrics.files_scanned),
+        format!("  bytes_scanned={}", metrics.bytes_scanned),
+        format!("  duplicate_groups={}", metrics.duplicate_groups),
+        format!("  duplicate_files={}", metrics.duplicate_files),
+        format!("  duplicate_bytes={}", metrics.duplicate_bytes),
+        format!("  elapsed_milliseconds={}", metrics.elapsed_milliseconds),
+    ]
+    .join("\n")
+}
+
+/// Builds the JSON object for aggregate scan metrics.
+fn format_metrics_as_json(metrics: &ScanMetrics) -> String {
+    format!(
+        "{{\"files_scanned\":{},\"bytes_scanned\":{},\"duplicate_groups\":{},\"duplicate_files\":{},\"duplicate_bytes\":{},\"elapsed_milliseconds\":{}}}",
+        metrics.files_scanned,
+        metrics.bytes_scanned,
+        metrics.duplicate_groups,
+        metrics.duplicate_files,
+        metrics.duplicate_bytes,
+        metrics.elapsed_milliseconds
     )
 }
 
